@@ -1,5 +1,6 @@
 import MailspringStore from 'mailspring-store';
 import { remote } from 'electron';
+import querystring from 'querystring';
 import { makeRequest } from '../mailspring-api-request';
 
 const autoUpdater = remote.getGlobal('application').autoUpdateManager;
@@ -31,11 +32,11 @@ class UpdateChannelStore extends MailspringStore {
   async refreshChannel() {
     // TODO BG
     try {
+      const qs = Object.assign({ preferredChannel: preferredChannel }, autoUpdater.parameters());
       const { current, available } = await makeRequest({
         server: 'identity',
         method: 'GET',
-        path: `/api/update-channel`,
-        qs: Object.assign({ preferredChannel: preferredChannel }, autoUpdater.parameters()),
+        path: `/api/update-channel?${querystring.stringify(qs)}`,
         json: true,
       });
       this._current = current || { name: 'Channel API Not Available' };
@@ -48,18 +49,15 @@ class UpdateChannelStore extends MailspringStore {
   }
 
   async setChannel(channelName) {
+    const qs = Object.assign(
+      { channel: channelName, preferredChannel: preferredChannel },
+      autoUpdater.parameters()
+    );
     try {
       const { current, available } = await makeRequest({
         server: 'identity',
         method: 'POST',
-        path: `/api/update-channel`,
-        qs: Object.assign(
-          {
-            channel: channelName,
-            preferredChannel: preferredChannel,
-          },
-          autoUpdater.parameters()
-        ),
+        path: `/api/update-channel?${querystring.stringify(qs)}`,
         json: true,
       });
       this._current = current || { name: 'Channel API Not Available' };
